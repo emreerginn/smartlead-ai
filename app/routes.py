@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, render_template
-from werkzeug.security import check_password_hash
-from app.database import lead_ekle, tum_leadler, ogretmen_bul
+from werkzeug.security import check_password_hash, generate_password_hash
+from config import Config
+from app.database import lead_ekle, tum_leadler, ogretmen_bul, ogretmen_ekle
 from app.services.ai_service import ai_service, AIServiceError
 
 sayfalar_bp = Blueprint('sayfalar', __name__)
@@ -67,3 +68,25 @@ def leads_listele():
         return jsonify({"basari": True, "leadler": kayitlar}), 200
     except Exception:
         return jsonify({"basari": False, "hata": "Sunucu hatasi."}), 500
+
+@api_bp.route('/ogretmen/ekle', methods=['POST'])
+def ogretmen_ekle_endpoint():
+    veri = request.get_json(silent=True) or {}
+
+    # Basit koruma: sadece SECRET_KEY'i bilen ekleyebilsin
+    if veri.get('anahtar') != Config.SECRET_KEY:
+        return jsonify({"basari": False, "hata": "Yetkisiz."}), 401
+
+    kullanici_adi = veri.get('kullanici_adi')
+    sifre = veri.get('sifre')
+    ad_soyad = veri.get('ad_soyad', '')
+
+    if not kullanici_adi or not sifre:
+        return jsonify({"basari": False, "hata": "Kullanici adi ve sifre zorunlu."}), 400
+
+    try:
+        sifre_hash = generate_password_hash(sifre)
+        ogretmen_ekle(kullanici_adi, sifre_hash, ad_soyad)
+        return jsonify({"basari": True, "mesaj": f"'{kullanici_adi}' eklendi."}), 201
+    except Exception as e:
+        return jsonify({"basari": False, "hata": str(e)}), 500
