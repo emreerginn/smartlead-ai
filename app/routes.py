@@ -1,7 +1,6 @@
-import hmac
 from flask import Blueprint, request, jsonify, render_template
-from config import Config
-from app.database import lead_ekle, tum_leadler
+from werkzeug.security import check_password_hash
+from app.database import lead_ekle, tum_leadler, ogretmen_bul
 from app.services.ai_service import ai_service, AIServiceError
 
 sayfalar_bp = Blueprint('sayfalar', __name__)
@@ -9,14 +8,12 @@ api_bp = Blueprint('api', __name__)
 
 
 def yetkili_mi(kullanici, sifre):
-    if not Config.DASH_USER or not Config.DASH_PASS:
-        return False
     if not isinstance(kullanici, str) or not isinstance(sifre, str):
         return False
-    return (
-        hmac.compare_digest(kullanici.encode(), Config.DASH_USER.encode())
-        and hmac.compare_digest(sifre.encode(), Config.DASH_PASS.encode())
-    )
+    ogretmen = ogretmen_bul(kullanici)
+    if not ogretmen:
+        return False
+    return check_password_hash(ogretmen['sifre_hash'], sifre)
 
 
 @sayfalar_bp.route('/')
@@ -31,7 +28,7 @@ def dashboard():
 def sohbet():
     veri = request.get_json() or {}
     mesaj = veri.get('mesaj')
-    gecmis = veri.get('gecmis', [])  # Varsa önceki mesaj geçmişini alır
+    gecmis = veri.get('gecmis', [])
 
     if not mesaj:
         return jsonify({"basari": False, "hata": "Mesaj alani zorunlu."}), 400
