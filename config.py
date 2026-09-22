@@ -12,11 +12,6 @@ class Config:
     GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
     AI_PROVIDER = os.environ.get('AI_PROVIDER', 'groq')
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', '*')
-<<<<<<< HEAD
-=======
-    DASH_USER = os.environ.get('DASH_USER', '')
-    DASH_PASS = os.environ.get('DASH_PASS', '') 
->>>>>>> c1102d11642089f293bfdde5d15c3026670c4f53
 
     BUSINESS_CONTEXT = """Sen CodeF Academy'nin yapay zeka asistanisin. CodeF Academy,
 Python, web gelistirme ve daha bircok alanda pratik yazilim kurslari sunan bir
