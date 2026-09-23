@@ -1,7 +1,7 @@
+import hmac
 from flask import Blueprint, request, jsonify, render_template
-from werkzeug.security import check_password_hash, generate_password_hash
 from config import Config
-from app.database import lead_ekle, tum_leadler, ogretmen_bul, ogretmen_ekle
+from app.database import lead_ekle, tum_leadler
 from app.services.ai_service import ai_service, AIServiceError
 
 sayfalar_bp = Blueprint('sayfalar', __name__)
@@ -11,10 +11,10 @@ api_bp = Blueprint('api', __name__)
 def yetkili_mi(kullanici, sifre):
     if not isinstance(kullanici, str) or not isinstance(sifre, str):
         return False
-    ogretmen = ogretmen_bul(kullanici)
-    if not ogretmen:
+    dogru_sifre = Config.OGRETMENLER.get(kullanici)
+    if not dogru_sifre:
         return False
-    return check_password_hash(ogretmen['sifre_hash'], sifre)
+    return hmac.compare_digest(sifre.encode(), dogru_sifre.encode())
 
 
 @sayfalar_bp.route('/')
@@ -29,7 +29,7 @@ def dashboard():
 def sohbet():
     veri = request.get_json() or {}
     mesaj = veri.get('mesaj')
-    gecmis = veri.get('gecmis', [])
+    gecmis = veri.get('gecmis', [])  # Varsa önceki mesaj geçmişini alır
 
     if not mesaj:
         return jsonify({"basari": False, "hata": "Mesaj alani zorunlu."}), 400
@@ -68,25 +68,3 @@ def leads_listele():
         return jsonify({"basari": True, "leadler": kayitlar}), 200
     except Exception:
         return jsonify({"basari": False, "hata": "Sunucu hatasi."}), 500
-
-@api_bp.route('/ogretmen/ekle', methods=['POST'])
-def ogretmen_ekle_endpoint():
-    veri = request.get_json(silent=True) or {}
-
-    # Basit koruma: sadece SECRET_KEY'i bilen ekleyebilsin
-    if veri.get('anahtar') != Config.SECRET_KEY:
-        return jsonify({"basari": False, "hata": "Yetkisiz."}), 401
-
-    kullanici_adi = veri.get('kullanici_adi')
-    sifre = veri.get('sifre')
-    ad_soyad = veri.get('ad_soyad', '')
-
-    if not kullanici_adi or not sifre:
-        return jsonify({"basari": False, "hata": "Kullanici adi ve sifre zorunlu."}), 400
-
-    try:
-        sifre_hash = generate_password_hash(sifre)
-        ogretmen_ekle(kullanici_adi, sifre_hash, ad_soyad)
-        return jsonify({"basari": True, "mesaj": f"'{kullanici_adi}' eklendi."}), 201
-    except Exception as e:
-        return jsonify({"basari": False, "hata": str(e)}), 500

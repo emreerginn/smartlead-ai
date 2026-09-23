@@ -1,6 +1,7 @@
 # config.py
 
 import os
+import json
 from dotenv import load_dotenv
 
 load_dotenv()  # .env dosyasini oku
@@ -12,6 +13,14 @@ class Config:
     GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
     AI_PROVIDER = os.environ.get('AI_PROVIDER', 'groq')
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', '*')
+
+    # Hoca kullanici adi/sifreleri - JSON formatinda tek bir env variable'da tutulur
+    # Ornek deger: {"emreergin":"E100346e!","serenayakman":"sifre123"}
+    _OGRETMENLER_JSON = os.environ.get('OGRETMENLER', '{}')
+    try:
+        OGRETMENLER = json.loads(_OGRETMENLER_JSON)
+    except json.JSONDecodeError:
+        OGRETMENLER = {}
 
     BUSINESS_CONTEXT = """Sen CodeF Academy'nin yapay zeka asistanisin. CodeF Academy,
 Python, web gelistirme ve daha bircok alanda pratik yazilim kurslari sunan bir
